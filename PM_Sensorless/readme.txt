@@ -1,0 +1,3 @@
+此工程内包含所需的include文件，最新的在CCS7.4环境下编译通过。
+修改了F2806x_RAM_PM_Sensorless.CMD文件来实现printf功能
+同时控制GPIO39实现在launchpad上实现LED闪灯

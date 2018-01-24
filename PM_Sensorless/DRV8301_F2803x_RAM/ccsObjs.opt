@@ -1,0 +1,1 @@
+"./DLOG4CHC.obj" "./DRV8301_SPI.obj" "./DSP2803x_GlobalVariableDefs.obj" "./DSP2803x_usDelay.obj" "./PM_Sensorless-DevInit_F2803x.obj" "./PM_Sensorless.obj" "../DSP2803x_Headers_nonBIOS.cmd" "../F28035_RAM_PM_Sensorless.CMD" "../IQmath.lib" -llibc.a 
