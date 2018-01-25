@@ -50,6 +50,7 @@ PAGE 0 :
 	BOOT_RSVD	: origin = 0x000002,	length = 0x00004E             
 	RAMM0		: origin = 0x000050,	length = 0x0003B0
 	progRAM		: origin = 0x008000,	length = 0x001800
+	textRAM		: origin = 0x00F040,	length = 0x003000	/* for .text : need by storage program */
 
 	FPUTABLES   : origin = 0x3FD860, length = 0x0006A0	   /* FPU Tables in Boot ROM */
    	IQTABLES   	: origin = 0x3FDF00, length = 0x000B50     /* IQ Math Tables in Boot ROM */
@@ -63,11 +64,10 @@ PAGE 0 :
          
 PAGE 1 : 
 
-	RAMM2       : origin = 0x00480, 	length = 0x000120
-	RAMM1		: origin = 0x00B9DE,	length = 0x000780
-	dataRAM		: origin = 0x009800,	length = 0x000800
-	textRAM		: origin = 0x00A000,	length = 0x0019DD
-
+	RAMM1		: origin = 0x000480,	length = 0x000380	/* for cio : need by printf to console */
+	RAMM2		: origin = 0x00A820,	length = 0x004100	/* max six int16 [2048] + two char [512] */
+	RAMM3		: origin = 0x00EB40,	length = 0x000400	/* for -head : need by printf() space */
+	dataRAM		: origin = 0x009800,	length = 0x001000
 }
  
  
@@ -77,23 +77,21 @@ SECTIONS
    codestart        : > BEGIN,      PAGE = 0
    ramfuncs         : > progRAM,       PAGE = 0  
 
-   .text            : > textRAM,     PAGE = 1
+   .text            : > textRAM,     PAGE = 0
 
    .cinit           : > RAMM0,      PAGE = 0
    .pinit           : > RAMM0,      PAGE = 0
    .switch          : > RAMM0,      PAGE = 0
    .reset           : > RESET,      PAGE = 0, TYPE = DSECT
    
-   .stack           : > RAMM1,      PAGE = 1
-
-   .cio  			: > RAMM2,      PAGE = 1
+   .stack           : > RAMM2,      PAGE = 1
 
    .ebss            : > dataRAM,     PAGE = 1
    .econst          : > dataRAM,     PAGE = 1      
 
-   .esysmem         : > RAMM1,      PAGE = 1
+   .esysmem         : > RAMM3,      PAGE = 1
 
-
+   .cio				: > RAMM1,      PAGE = 1
 
    IQmath           : >  progRAM,   PAGE = 0
    IQmathTables     : >  IQTABLES, 	PAGE = 0, TYPE = NOLOAD

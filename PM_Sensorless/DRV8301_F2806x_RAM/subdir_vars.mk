@@ -6,6 +6,7 @@ SHELL = cmd.exe
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CMD_SRCS += \
+../F28069.cmd \
 ../F2806x_Headers_nonBIOS.cmd 
 
 LIB_SRCS += \
@@ -15,10 +16,8 @@ LIB_SRCS += \
 
 ASM_SRCS += \
 ../DLOG4CHC.asm \
+../F2806x_CodeStartBranch.asm \
 ../F2806x_usDelay.asm 
-
-CMD_UPPER_SRCS += \
-../F2806x_RAM_PM_Sensorless.CMD 
 
 C_SRCS += \
 ../DRV8301_SPI.c \
@@ -35,6 +34,7 @@ C_DEPS += \
 OBJS += \
 ./DLOG4CHC.obj \
 ./DRV8301_SPI.obj \
+./F2806x_CodeStartBranch.obj \
 ./F2806x_GlobalVariableDefs.obj \
 ./F2806x_usDelay.obj \
 ./PM_Sensorless-DevInit_F2806x.obj \
@@ -42,11 +42,13 @@ OBJS += \
 
 ASM_DEPS += \
 ./DLOG4CHC.d \
+./F2806x_CodeStartBranch.d \
 ./F2806x_usDelay.d 
 
 OBJS__QUOTED += \
 "DLOG4CHC.obj" \
 "DRV8301_SPI.obj" \
+"F2806x_CodeStartBranch.obj" \
 "F2806x_GlobalVariableDefs.obj" \
 "F2806x_usDelay.obj" \
 "PM_Sensorless-DevInit_F2806x.obj" \
@@ -60,10 +62,12 @@ C_DEPS__QUOTED += \
 
 ASM_DEPS__QUOTED += \
 "DLOG4CHC.d" \
+"F2806x_CodeStartBranch.d" \
 "F2806x_usDelay.d" 
 
 ASM_SRCS__QUOTED += \
 "../DLOG4CHC.asm" \
+"../F2806x_CodeStartBranch.asm" \
 "../F2806x_usDelay.asm" 
 
 C_SRCS__QUOTED += \

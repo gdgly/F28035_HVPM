@@ -15,12 +15,13 @@ ORDERED_OBJS += \
 "../IQmath_fpu32.lib" \
 "./DLOG4CHC.obj" \
 "./DRV8301_SPI.obj" \
+"./F2806x_CodeStartBranch.obj" \
 "./F2806x_GlobalVariableDefs.obj" \
 "./F2806x_usDelay.obj" \
 "./PM_Sensorless-DevInit_F2806x.obj" \
 "./PM_Sensorless.obj" \
+"../F28069.cmd" \
 "../F2806x_Headers_nonBIOS.cmd" \
-"../F2806x_RAM_PM_Sensorless.CMD" \
 "../IQmath.lib" \
 $(GEN_CMDS__FLAG) \
 
@@ -148,7 +149,7 @@ all: PM_Sensorless_DRV8301_F2806x.out
 PM_Sensorless_DRV8301_F2806x.out: $(OBJS) $(CMD_SRCS) $(CMD_UPPER_SRCS) $(LIB_SRCS) $(GEN_CMDS)
 	@echo 'Building target: "$@"'
 	@echo 'Invoking: C2000 Linker'
-	"C:/Program Files (x86)/Texas Instruments/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/bin/cl2000" -v28 -ml --cla_support=cla0 --float_support=fpu32 --vcu_support=vcu0 --define="_DEBUG" --define="DRV8301" --define="LARGE_MODEL" --define="FLOATING_MATH" -g --printf_support=minimal --diag_warning=225 --quiet -z -m"PM_Sensorless_DRV8301_F2806x.map" --heap_size=0x400 --stack_size=0x380 --warn_sections -i"C:/Program Files (x86)/Texas Instruments/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/lib" -i"C:/Users/win10/workspace_v7/PM_Sensorless" -i"C:/Program Files (x86)/Texas Instruments/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include" --reread_libs --xml_link_info="PM_Sensorless_DRV8301_F2806x_linkInfo.xml" --rom_model -o "PM_Sensorless_DRV8301_F2806x.out" $(ORDERED_OBJS)
+	"C:/Program Files (x86)/Texas Instruments/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/bin/cl2000" -v28 -ml --cla_support=cla0 --float_support=fpu32 --vcu_support=vcu0 --define="_DEBUG" --define="DRV8301" --define="LARGE_MODEL" --define="FLOATING_MATH" -g --printf_support=full --diag_warning=225 --quiet -z -m"PM_Sensorless_DRV8301_F2806x.map" --heap_size=0x400 --stack_size=0x1980 --warn_sections -i"C:/Program Files (x86)/Texas Instruments/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/lib" -i"C:/Users/win10/workspace_v7/PM_Sensorless" -i"C:/Program Files (x86)/Texas Instruments/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include" --reread_libs --xml_link_info="PM_Sensorless_DRV8301_F2806x_linkInfo.xml" --rom_model -o "PM_Sensorless_DRV8301_F2806x.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: "$@"'
 	@echo ' '
 
@@ -162,9 +163,9 @@ PM_Sensorless_DRV8301_F2806x.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(BIN_OUTPUTS__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "DLOG4CHC.obj" "DRV8301_SPI.obj" "F2806x_GlobalVariableDefs.obj" "F2806x_usDelay.obj" "PM_Sensorless-DevInit_F2806x.obj" "PM_Sensorless.obj" 
+	-$(RM) "DLOG4CHC.obj" "DRV8301_SPI.obj" "F2806x_CodeStartBranch.obj" "F2806x_GlobalVariableDefs.obj" "F2806x_usDelay.obj" "PM_Sensorless-DevInit_F2806x.obj" "PM_Sensorless.obj" 
 	-$(RM) "DRV8301_SPI.d" "F2806x_GlobalVariableDefs.d" "PM_Sensorless-DevInit_F2806x.d" "PM_Sensorless.d" 
-	-$(RM) "DLOG4CHC.d" "F2806x_usDelay.d" 
+	-$(RM) "DLOG4CHC.d" "F2806x_CodeStartBranch.d" "F2806x_usDelay.d" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

@@ -22,6 +22,7 @@ Note: In this software, the default inverter is supposed to be DRV8412-EVM kit.
 #include "PM_Sensorless.h"
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 #ifdef DRV8301
 union DRV8301_STATUS_REG_1 DRV8301_stat_reg1;
@@ -189,12 +190,26 @@ void main(void)
 #endif //(FLASH)
 
    // Waiting for enable flag set
+	CpuTimer0Regs.PRD.all =  mSec500;
+	int16 data[512];
+	char s[32] = "hello world";
+	memset(data,0,sizeof(data));
+	data[0] = 0x55aa;
    while (EnableFlag==FALSE) 
     { 
-      BackTicker++;
-      GpioDataRegs.GPBTOGGLE.bit.GPIO39 = 1;    // Blink LED
-      printf("this is a test led project\n");
-      DELAY_US(500000);
+       if(CpuTimer0Regs.TCR.bit.TIF == 1){
+           CpuTimer0Regs.TCR.bit.TIF = 1;   // clear flag
+           BackTicker++;
+           GpioDataRegs.GPBTOGGLE.bit.GPIO39 = 1;    // Blink LED
+           GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1;    // Blink LED
+           int ret = SciaRegs.SCICTL2.bit.TXRDY;
+           if(ret){
+               SciaRegs.SCITXBUF = data[0];
+           }
+           printf("what is ret : %d\n",ret);
+           printf("this is a test led project and what is data : %s %d\n",s,data[0]);
+       }
+//      DELAY_US(500000);
     }
 
 // Timing sync for slow background tasks 
