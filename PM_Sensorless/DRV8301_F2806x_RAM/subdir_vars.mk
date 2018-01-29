@@ -6,7 +6,6 @@ SHELL = cmd.exe
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CMD_SRCS += \
-../F28069.cmd \
 ../F2806x_Headers_nonBIOS.cmd 
 
 LIB_SRCS += \
@@ -18,6 +17,9 @@ ASM_SRCS += \
 ../DLOG4CHC.asm \
 ../F2806x_CodeStartBranch.asm \
 ../F2806x_usDelay.asm 
+
+CMD_UPPER_SRCS += \
+../F2806x_RAM_PM_Sensorless.CMD 
 
 C_SRCS += \
 ../DRV8301_SPI.c \

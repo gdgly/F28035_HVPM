@@ -53,6 +53,7 @@ PM_Sensorless.obj: C:/Program\ Files\ (x86)/Texas\ Instruments/ccsv7/tools/compi
 PM_Sensorless.obj: C:/Program\ Files\ (x86)/Texas\ Instruments/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/stdio.h
 PM_Sensorless.obj: C:/Program\ Files\ (x86)/Texas\ Instruments/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/stdarg.h
 PM_Sensorless.obj: C:/Program\ Files\ (x86)/Texas\ Instruments/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/string.h
+PM_Sensorless.obj: C:/Program\ Files\ (x86)/Texas\ Instruments/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/stdint.h
 
 ../PM_Sensorless.c: 
 C:/Users/win10/workspace_v7/PM_Sensorless/include/F2806x/F2806x_headers/PeripheralHeaderIncludes.h: 
@@ -107,3 +108,4 @@ C:/Program\ Files\ (x86)/Texas\ Instruments/ccsv7/tools/compiler/ti-cgt-c2000_16
 C:/Program\ Files\ (x86)/Texas\ Instruments/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/stdio.h: 
 C:/Program\ Files\ (x86)/Texas\ Instruments/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/stdarg.h: 
 C:/Program\ Files\ (x86)/Texas\ Instruments/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/string.h: 
+C:/Program\ Files\ (x86)/Texas\ Instruments/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/stdint.h: 

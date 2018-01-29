@@ -730,7 +730,29 @@ void MemCopy(Uint16 *SourceAddr, Uint16* SourceEndAddr, Uint16* DestAddr)
     }
     return;
 }
-	
+
+
+void InitSci()
+{
+    SciaRegs.SCICCR.all =0x0007;   // 1 stop bit,  No loopback
+                                   // No parity,8 char bits,
+                                   // async mode, idle-line protocol
+    SciaRegs.SCICTL1.all =0x0003;  // enable TX, RX, internal SCICLK,
+                                   // Disable RX ERR, SLEEP, TXWAKE
+    SciaRegs.SCICTL2.bit.TXINTENA =0;
+    SciaRegs.SCICTL2.bit.RXBKINTENA =1;
+    SciaRegs.SCIHBAUD = 0x0000;
+    SciaRegs.SCILBAUD = 0x0014;       //80 MHz SYSCLK baud 115200
+    SciaRegs.SCICCR.bit.LOOPBKENA =1; // Enable loop back
+    SciaRegs.SCIFFTX.all=0xC022;      //set FIFO deep 2
+    SciaRegs.SCIFFRX.all=0x0024;      //set FIFO deep 4
+    SciaRegs.SCIFFCT.all=0x00;
+
+    SciaRegs.SCICTL1.all =0x0023;     // Relinquish SCI from Reset
+    SciaRegs.SCIFFTX.bit.TXFIFOXRESET=1;
+    SciaRegs.SCIFFRX.bit.RXFIFORESET=1;
+
+}
 //===========================================================================
 // End of file.
 //===========================================================================

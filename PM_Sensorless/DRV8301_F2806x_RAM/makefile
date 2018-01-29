@@ -20,8 +20,9 @@ ORDERED_OBJS += \
 "./F2806x_usDelay.obj" \
 "./PM_Sensorless-DevInit_F2806x.obj" \
 "./PM_Sensorless.obj" \
-"../F28069.cmd" \
+"./F2806x_CpuTimers.obj" \
 "../F2806x_Headers_nonBIOS.cmd" \
+"../F2806x_RAM_PM_Sensorless.CMD" \
 "../IQmath.lib" \
 $(GEN_CMDS__FLAG) \
 
@@ -33,7 +34,9 @@ RMDIR := RMDIR /S/Q
 # All of the sources participating in the build are defined here
 -include sources.mk
 -include subdir_vars.mk
+-include source/subdir_vars.mk
 -include subdir_rules.mk
+-include source/subdir_rules.mk
 -include objects.mk
 
 ifneq ($(MAKECMDGOALS),clean)
@@ -163,8 +166,8 @@ PM_Sensorless_DRV8301_F2806x.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(BIN_OUTPUTS__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "DLOG4CHC.obj" "DRV8301_SPI.obj" "F2806x_CodeStartBranch.obj" "F2806x_GlobalVariableDefs.obj" "F2806x_usDelay.obj" "PM_Sensorless-DevInit_F2806x.obj" "PM_Sensorless.obj" 
-	-$(RM) "DRV8301_SPI.d" "F2806x_GlobalVariableDefs.d" "PM_Sensorless-DevInit_F2806x.d" "PM_Sensorless.d" 
+	-$(RM) "DLOG4CHC.obj" "DRV8301_SPI.obj" "F2806x_CodeStartBranch.obj" "F2806x_GlobalVariableDefs.obj" "F2806x_usDelay.obj" "PM_Sensorless-DevInit_F2806x.obj" "PM_Sensorless.obj" "F2806x_CpuTimers.obj" 
+	-$(RM) "DRV8301_SPI.d" "F2806x_GlobalVariableDefs.d" "PM_Sensorless-DevInit_F2806x.d" "PM_Sensorless.d" "source\F2806x_CpuTimers.d" 
 	-$(RM) "DLOG4CHC.d" "F2806x_CodeStartBranch.d" "F2806x_usDelay.d" 
 	-@echo 'Finished clean'
 	-@echo ' '

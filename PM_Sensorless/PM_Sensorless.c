@@ -23,6 +23,7 @@ Note: In this software, the default inverter is supposed to be DRV8412-EVM kit.
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 
 #ifdef DRV8301
 union DRV8301_STATUS_REG_1 DRV8301_stat_reg1;
@@ -37,6 +38,10 @@ interrupt void MainISR(void);
 void DeviceInit();
 void MemCopy();
 void InitFlash();
+void InitSci(void);
+interrupt void sciaRxFifoIsr(void);
+interrupt void sciaTxFifoIsr(void);
+interrupt void timer0_100ms_isr(void);
 // State Machine function prototypes
 //------------------------------------
 // Alpha states
@@ -190,27 +195,95 @@ void main(void)
 #endif //(FLASH)
 
    // Waiting for enable flag set
-	CpuTimer0Regs.PRD.all =  mSec500;
+
+
+	EALLOW;  // This is needed to write to EALLOW protected registers
+	PieVectTable.SCIRXINTA = &sciaRxFifoIsr;
+//	PieVectTable.SCITXINTA = &sciaTxFifoIsr;
+	PieVectTable.TINT0 = &timer0_100ms_isr;
+	EDIS;   // This is needed to disable write to EALLOW protected registers
+
+    InitSci();
+    InitCpuTimers();
+
+
+
+    AdcRegs.ADCCTL1.all=ADC_RESET_FLAG;
+    asm(" NOP ");
+    asm(" NOP ");
+
+    EALLOW;
+     AdcRegs.ADCCTL1.bit.ADCBGPWD   = 1;    /* Power up band gap */
+
+    DELAY_US(ADC_usDELAY);                  /* Delay before powering up rest of ADC */
+
+    AdcRegs.ADCCTL1.bit.ADCREFSEL   = 0;
+    AdcRegs.ADCCTL1.bit.ADCREFPWD   = 1;    /* Power up reference */
+    AdcRegs.ADCCTL1.bit.ADCPWDN     = 1;    /* Power up rest of ADC */
+    AdcRegs.ADCCTL1.bit.ADCENABLE   = 1;    /* Enable ADC */
+
+    asm(" RPT#100 || NOP");
+
+    AdcRegs.ADCCTL1.bit.INTPULSEPOS=1;
+    AdcRegs.ADCCTL1.bit.TEMPCONV=0;
+
+    DELAY_US(ADC_usDELAY);
+
+    AdcRegs.ADCCTL1.bit.TEMPCONV    = 1;    //Connect internal temp sensor to channel ADCINA5.
+
+    AdcRegs.ADCSOC0CTL.bit.CHSEL    = 5;    //set SOC0 channel select to ADCINA5 (which is internally connected to the temperature sensor)
+    AdcRegs.ADCSOC0CTL.bit.TRIGSEL  = 5;    //set SOC0 start trigger on EPWM1A
+    AdcRegs.ADCSOC0CTL.bit.ACQPS    = 6;   //set SOC0 S/H Window to 26 ADC Clock Cycles, (25 ACQPS plus 1)
+//    AdcRegs.INTSEL1N2.bit.INT1E     = 1;
+
+    EDIS;
+
+
+    /* Set up Event Trigger with CNT_zero enable for Time-base of EPWM1 */
+    EPwm1Regs.ETSEL.bit.SOCAEN = 1;     /* Enable SOCA */
+    EPwm1Regs.ETSEL.bit.SOCASEL = 1;    /* Enable CNT_zero event for SOCA */
+    EPwm1Regs.ETPS.bit.SOCAPRD = 1;     /* Generate SOCA on the 1st event */
+    EPwm1Regs.ETCLR.bit.SOCA = 1;       /* Clear SOCA flag */
+//    EPwm1Regs.CMPA.half.CMPA    = 0x0080;   // Set compare A value
+    EPwm1Regs.TBPRD              = SYSTEM_FREQUENCY*1000000*T/2;;   // Set period for ePWM1
+    EPwm1Regs.TBCTL.bit.CTRMODE  = 0;        // count up and start
+
+
+	PieCtrlRegs.PIEIER9.bit.INTx1=1;     // PIE Group 9, INT1
+    IER |= M_INT9; // Enable CPU INT
+
+	PieCtrlRegs.PIEIER1.bit.INTx1 = 1;  // Enable INT 1.1 in the PIE
+//	PieCtrlRegs.PIEIER9.bit.INTx2=1;     // PIE Group 9, INT2
+
+	IER |= M_INT1; // Enable CPU INT
+	EINT;
+
+
+	ConfigCpuTimer(&CpuTimer0, 80, 100000);
+	ConfigCpuTimer(&CpuTimer1, 80, 500000);
+
+	StartCpuTimer0();
+	StartCpuTimer1();
+
 	int16 data[512];
+	uint16_t adc_result_temp;
 	char s[32] = "hello world";
 	memset(data,0,sizeof(data));
-	data[0] = 0x55aa;
-   while (EnableFlag==FALSE) 
-    { 
-       if(CpuTimer0Regs.TCR.bit.TIF == 1){
-           CpuTimer0Regs.TCR.bit.TIF = 1;   // clear flag
-           BackTicker++;
-           GpioDataRegs.GPBTOGGLE.bit.GPIO39 = 1;    // Blink LED
-           GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1;    // Blink LED
-           int ret = SciaRegs.SCICTL2.bit.TXRDY;
-           if(ret){
-               SciaRegs.SCITXBUF = data[0];
-           }
-           printf("what is ret : %d\n",ret);
-           printf("this is a test led project and what is data : %s %d\n",s,data[0]);
-       }
+	data[0] = 0xaa;
+	while (EnableFlag==FALSE)
+	{
+	    if(CpuTimer1Regs.TCR.bit.TIF == 1){
+	        adc_result_temp = AdcResult.ADCRESULT0;
+	        CpuTimer1Regs.TCR.bit.TIF = 1;   // clear flag
+	        BackTicker++;
+            printf("this is a test led project and what is data : %s %d %u\n",s,data[0],adc_result_temp);
+	        while(!SciaRegs.SCICTL2.bit.TXRDY);
+	        SciaRegs.SCITXBUF = 0x53;
+	        SciaRegs.SCITXBUF = 0x02;
+	        GpioDataRegs.GPBTOGGLE.bit.GPIO39 = 1;    // Blink LED
+	    }
 //      DELAY_US(500000);
-    }
+	}
 
 // Timing sync for slow background tasks 
 // Timer period definitions found in device specific PeripheralHeaderIncludes.h
@@ -1632,6 +1705,54 @@ _iq IBfdbk;
 #endif
 
 }
+
+
+interrupt void sciaRxFifoIsr(void)
+{
+    uint16_t datagram[16];
+
+    datagram[0] = SciaRegs.SCIRXBUF.all;
+    datagram[1] = SciaRegs.SCIRXBUF.all;
+    datagram[2] = SciaRegs.SCIRXBUF.all;
+    datagram[3] = SciaRegs.SCIRXBUF.all;
+
+    printf("what is rev %x %x\n",datagram[0],datagram[1]);
+
+    GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1;    // Blink LED
+
+    SciaRegs.SCIFFRX.bit.RXFFOVRCLR=1;   // Clear Overflow flag
+    SciaRegs.SCIFFRX.bit.RXFFINTCLR=1;   // Clear Interrupt flag
+
+    PieCtrlRegs.PIEACK.all|=0x100;       // Issue PIE ack
+
+}
+
+
+interrupt void sciaTxFifoIsr(void)
+{
+
+    SciaRegs.SCITXBUF = 0xaa;
+    SciaRegs.SCITXBUF = 0x55;
+
+    SciaRegs.SCIFFTX.bit.TXFFINTCLR=1;  // Clear SCI Interrupt flag
+    PieCtrlRegs.PIEACK.all|=0x100;      // Issue PIE ACK
+
+}
+
+
+interrupt void timer0_100ms_isr(void)
+{
+
+    printf("i m in 100ms isr now \n");
+
+
+    CpuTimer0Regs.TCR.bit.TIF = 1;
+
+    PieCtrlRegs.PIEACK.all|= 0x001;   // Issue PIE ACK  cputimer1 and cputimer2 may trigger is isr if you do not add this line
+
+
+}
+
 
 //===========================================================================
 // No more.

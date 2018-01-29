@@ -46,7 +46,7 @@ extern void DSP28x_usDelay(unsigned long Count);
 																								\
 	DELAY_US(ADC_usDELAY);					/* Delay before powering up rest of ADC */			\
 																								\
-	AdcRegs.ADCCTL1.bit.ADCREFSEL	= 0;														\
+	AdcRegs.ADCCTL1.bit.ADCREFSEL	= 0;	/* select internal reference */													\
    	AdcRegs.ADCCTL1.bit.ADCREFPWD	= 1;	/* Power up reference */							\
    	AdcRegs.ADCCTL1.bit.ADCPWDN 	= 1;	/* Power up rest of ADC */							\
 	AdcRegs.ADCCTL1.bit.ADCENABLE	= 1;	/* Enable ADC */									\
