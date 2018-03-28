@@ -239,15 +239,14 @@ void main(void)
     EDIS;
 
 
-    /* Set up Event Trigger with CNT_zero enable for Time-base of EPWM1 */
+//    /* Set up Event Trigger with CNT_zero enable for Time-base of EPWM1 */
     EPwm1Regs.ETSEL.bit.SOCAEN = 1;     /* Enable SOCA */
     EPwm1Regs.ETSEL.bit.SOCASEL = 1;    /* Enable CNT_zero event for SOCA */
     EPwm1Regs.ETPS.bit.SOCAPRD = 1;     /* Generate SOCA on the 1st event */
     EPwm1Regs.ETCLR.bit.SOCA = 1;       /* Clear SOCA flag */
 //    EPwm1Regs.CMPA.half.CMPA    = 0x0080;   // Set compare A value
-    EPwm1Regs.TBPRD              = SYSTEM_FREQUENCY*1000000*T/2;;   // Set period for ePWM1
+//    EPwm1Regs.TBPRD              = SYSTEM_FREQUENCY*1000000*T/2;;   // Set period for ePWM1
     EPwm1Regs.TBCTL.bit.CTRMODE  = 0;        // count up and start
-
 
 	PieCtrlRegs.PIEIER9.bit.INTx1=1;     // PIE Group 9, INT1
     IER |= M_INT9; // Enable CPU INT
@@ -265,22 +264,122 @@ void main(void)
 	StartCpuTimer0();
 	StartCpuTimer1();
 
-	int16 data[512];
+	int16 data[64];
 	uint16_t adc_result_temp;
 	char s[32] = "hello world";
 	memset(data,0,sizeof(data));
 	data[0] = 0xaa;
+
+
+	ipark1.Alpha = _IQ(0.2);
+	ipark1.Beta = _IQ(-0.01);
+    svgen_dq1.Ualpha = ipark1.Alpha;
+    svgen_dq1.Ubeta = ipark1.Beta;
+    SVGEN_MACRO(svgen_dq1)
+
+
+    // Initialize PWM module
+    pwm1.PeriodMax = SYSTEM_FREQUENCY*1000000*T/2;  // Prescaler X1 (T1), ISR period = T x 1
+    PWM_INIT_MACRO(pwm1)
+
+//    EPwm1Regs.CMPA.half.CMPA = 2000;
+//    EPwm2Regs.CMPA.half.CMPA = 1200;
+//    EPwm3Regs.CMPA.half.CMPA = 1000;
+
+//    pwm1.MfuncC1 = _IQtoQ15(svgen_dq1.Ta);
+//    pwm1.MfuncC2 = _IQtoQ15(svgen_dq1.Tb);
+//    pwm1.MfuncC3 = _IQtoQ15(svgen_dq1.Tc);
+//    PWM_MACRO(pwm1)                                // Calculate the new PWM compare values
+
+//    EPwm1Regs.CMPA.half.CMPA = 0.0001*pwm1.PeriodMax;
+//    EPwm1Regs.CMPA.half.CMPA=pwm1.PWM1out;  // PWM 1A - PhaseA
+//    EPwm2Regs.CMPA.half.CMPA=pwm1.PWM2out;  // PWM 2A - PhaseB
+//    EPwm3Regs.CMPA.half.CMPA=pwm1.PWM3out;  // PWM 3A - PhaseC
+
+    // Initialize PWMDAC module
+    pwmdac1.PeriodMax = 500;   // @60Mhz: 1500->20kHz, 1000-> 30kHz, 500->60kHz
+    pwmdac1.PwmDacInPointer0 = &PwmDacCh1;
+    pwmdac1.PwmDacInPointer1 = &PwmDacCh2;
+    pwmdac1.PwmDacInPointer2 = &PwmDacCh3;
+    pwmdac1.PwmDacInPointer3 = &PwmDacCh4;
+
+    PWMDAC_INIT_MACRO(pwmdac1)
+
+    DRV8301_SPI_Init(&SpiaRegs);
+    GpioDataRegs.GPBCLEAR.bit.GPIO50 = 1;
+
+//    EALLOW;
+//    EPwm1Regs.TZFRC.bit.OST=1;
+//    EPwm2Regs.TZFRC.bit.OST=1;
+//    EPwm3Regs.TZFRC.bit.OST=1;
+//    EDIS;
+
+    DELAY_US(500000);
+
+#ifdef F2806x_DEVICE_H
+    GpioDataRegs.GPBSET.bit.GPIO50 = 1;
+    GpioDataRegs.GPBSET.bit.GPIO51 = 1;
+#endif
+
+    DELAY_US(50000);        //delay to allow DRV830x supplies to ramp up
+
+    DRV8301_cntrl_reg1.bit.GATE_CURRENT = 0;        // full current 1.7A
+//          DRV8301_cntrl_reg1.bit.GATE_CURRENT = 1;        // med current 0.7A
+//          DRV8301_cntrl_reg1.bit.GATE_CURRENT = 2;        // min current 0.25A
+    DRV8301_cntrl_reg1.bit.GATE_RESET = 0;          // Normal Mode
+    DRV8301_cntrl_reg1.bit.PWM_MODE = 0;            // six independant PWMs
+//          DRV8301_cntrl_reg1.bit.OC_MODE = 0;             // current limiting when OC detected
+    DRV8301_cntrl_reg1.bit.OC_MODE = 1;             // latched OC shutdown
+//          DRV8301_cntrl_reg1.bit.OC_MODE = 2;             // Report on OCTWn pin and SPI reg only, no shut-down
+//          DRV8301_cntrl_reg1.bit.OC_MODE = 3;             // OC protection disabled
+//          DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 0;          // OC @ Vds=0.060V
+//          DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 4;          // OC @ Vds=0.097V
+//          DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 6;          // OC @ Vds=0.123V
+//          DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 9;          // OC @ Vds=0.175V
+    DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 15;         // OC @ Vds=0.358V
+//          DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 16;         // OC @ Vds=0.403V
+//          DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 17;         // OC @ Vds=0.454V
+//          DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 18;         // OC @ Vds=0.511V
+    DRV8301_cntrl_reg1.bit.Reserved = 0;
+
+//          DRV8301_cntrl_reg2.bit.OCTW_SET = 0;            // report OT and OC
+    DRV8301_cntrl_reg2.bit.OCTW_SET = 1;            // report OT only
+#if DRV_GAIN == 10
+    DRV8301_cntrl_reg2.bit.GAIN = 0;                // CS amplifier gain = 10
+#elif DRV_GAIN == 20
+    DRV8301_cntrl_reg2.bit.GAIN = 1;                // CS amplifier gain = 20
+#elif DRV_GAIN == 40
+    DRV8301_cntrl_reg2.bit.GAIN = 2;                // CS amplifier gain = 40
+#elif DRV_GAIN == 80
+    DRV8301_cntrl_reg2.bit.GAIN = 3;                // CS amplifier gain = 80
+#endif
+    DRV8301_cntrl_reg2.bit.DC_CAL_CH1 = 0;          // not in CS calibrate mode
+    DRV8301_cntrl_reg2.bit.DC_CAL_CH2 = 0;          // not in CS calibrate mode
+    DRV8301_cntrl_reg2.bit.OC_TOFF = 0;             // normal mode
+    DRV8301_cntrl_reg2.bit.Reserved = 0;
+
+    //write to DRV8301 control register 1, returns status register 1
+    DRV8301_stat_reg1.all = DRV8301_SPI_Write(&SpiaRegs,CNTRL_REG_1_ADDR,DRV8301_cntrl_reg1.all);
+    //write to DRV8301 control register 2, returns status register 1
+    DRV8301_stat_reg1.all = DRV8301_SPI_Write(&SpiaRegs,CNTRL_REG_2_ADDR,DRV8301_cntrl_reg2.all);
+
 	while (EnableFlag==FALSE)
 	{
 	    if(CpuTimer1Regs.TCR.bit.TIF == 1){
+	        if(GpioDataRegs.GPADAT.bit.GPIO18 == 0)
+	        {
+	            DRV8301_stat_reg1.all = DRV8301_SPI_Read(&SpiaRegs,STAT_REG_1_ADDR);
+	            DRV8301_stat_reg2.all = DRV8301_SPI_Read(&SpiaRegs,STAT_REG_2_ADDR);
+	        }
 	        adc_result_temp = AdcResult.ADCRESULT0;
 	        CpuTimer1Regs.TCR.bit.TIF = 1;   // clear flag
 	        BackTicker++;
-            printf("this is a test led project and what is data : %s %d %u\n",s,data[0],adc_result_temp);
+            printf("this is a test led project and what is data : %s %u %u\n",s,data[0],adc_result_temp);
 	        while(!SciaRegs.SCICTL2.bit.TXRDY);
 	        SciaRegs.SCITXBUF = 0x53;
 	        SciaRegs.SCITXBUF = 0x02;
-	        GpioDataRegs.GPBTOGGLE.bit.GPIO39 = 1;    // Blink LED
+//	        GpioDataRegs.GPBTOGGLE.bit.GPIO39 = 1;    // Blink LED
+	        GpioDataRegs.GPBSET.bit.GPIO39 = 1;
 	    }
 //      DELAY_US(500000);
 	}
@@ -1718,7 +1817,7 @@ interrupt void sciaRxFifoIsr(void)
 
     printf("what is rev %x %x\n",datagram[0],datagram[1]);
 
-    GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1;    // Blink LED
+    GpioDataRegs.GPBSET.bit.GPIO34 = 1;    // Blink LED
 
     SciaRegs.SCIFFRX.bit.RXFFOVRCLR=1;   // Clear Overflow flag
     SciaRegs.SCIFFRX.bit.RXFFINTCLR=1;   // Clear Interrupt flag

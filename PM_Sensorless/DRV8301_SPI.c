@@ -23,16 +23,19 @@ void DRV8301_SPI_Init(volatile struct SPI_REGS *s)
 	s->SPICCR.bit.SPICHAR = 0xF;		// 16-bit character
 	s->SPICCR.bit.SPILBK = 0;     		// loopback off
 	s->SPICCR.bit.CLKPOLARITY = 0;  	// Rising edge without delay
-
+//
 	s->SPICTL.bit.SPIINTENA = 0;		// disable SPI interrupt
 	s->SPICTL.bit.TALK = 1;				// enable transmission
 	s->SPICTL.bit.MASTER_SLAVE = 1;		// master
 	s->SPICTL.bit.CLK_PHASE = 0;    	// Rising edge without delay
 	s->SPICTL.bit.OVERRUNINTENA = 0;	// disable reciever overrun interrupt
-	
-	s->SPIBRR = 0;						// SPICLK = LSPCLK / 4 (max SPICLK)
-
+//
+	s->SPIBRR = 0x7F;						// SPICLK = LSPCLK / 4 (max SPICLK)
+//
 	s->SPICCR.bit.SPISWRESET=1;  		// Enable SPI
+
+//    s->SPIPRI.bit.FREE = 1;
+
 }
 
 /*****************************************************************************/

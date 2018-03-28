@@ -100,7 +100,7 @@ void DeviceInit(void)
       //------------------------------------------------
    SysCtrlRegs.PCLKCR0.bit.I2CAENCLK = 0;   // I2C
    //------------------------------------------------
-   SysCtrlRegs.PCLKCR0.bit.SPIAENCLK = 0;   // SPI-A
+   SysCtrlRegs.PCLKCR0.bit.SPIAENCLK = 1;   // SPI-A
    SysCtrlRegs.PCLKCR0.bit.SPIBENCLK = 1;	// SPI-B
    //------------------------------------------------
    SysCtrlRegs.PCLKCR0.bit.MCBSPAENCLK = 0;	// McBSP-A
@@ -202,8 +202,8 @@ void DeviceInit(void)
 //	GpioDataRegs.GPASET.bit.GPIO6 = 1;		// uncomment if --> Set High initially
 //--------------------------------------------------------------------------------------
 //  GPIO-07 - PIN FUNCTION = STOP
-	GpioCtrlRegs.GPAMUX1.bit.GPIO7 = 0;		// 0=GPIO, 1=EPWM4B, 2=SCIRXDA, 3=ECAP2
-	GpioCtrlRegs.GPADIR.bit.GPIO7 = 0;		// 1=OUTput,  0=INput 
+	GpioCtrlRegs.GPAMUX1.bit.GPIO7 = 1;		// 0=GPIO, 1=EPWM4B, 2=SCIRXDA, 3=ECAP2
+//	GpioCtrlRegs.GPADIR.bit.GPIO7 = 0;		// 1=OUTput,  0=INput
 //	GpioDataRegs.GPACLEAR.bit.GPIO7 = 1;	// uncomment if --> Set Low initially
 //	GpioDataRegs.GPASET.bit.GPIO7 = 1;		// uncomment if --> Set High initially
 //--------------------------------------------------------------------------------------
@@ -214,8 +214,8 @@ void DeviceInit(void)
 //	GpioDataRegs.GPASET.bit.GPIO8 = 1;		// uncomment if --> Set High initially
 //--------------------------------------------------------------------------------------
 //  GPIO-09 - PIN FUNCTION =  START
-	GpioCtrlRegs.GPAMUX1.bit.GPIO9 = 0;		// 0=GPIO,  1=EPWM5B,  2=SCITXDB,  3=ECAP3
-	GpioCtrlRegs.GPADIR.bit.GPIO9 = 0;		// 1=OUTput,  0=INput 
+	GpioCtrlRegs.GPAMUX1.bit.GPIO9 = 1;		// 0=GPIO,  1=EPWM5B,  2=SCITXDB,  3=ECAP3
+//	GpioCtrlRegs.GPADIR.bit.GPIO9 = 0;		// 1=OUTput,  0=INput
 //	GpioDataRegs.GPACLEAR.bit.GPIO9 = 1;	// uncomment if --> Set Low initially
 //	GpioDataRegs.GPASET.bit.GPIO9 = 1;		// uncomment if --> Set High initially
 //--------------------------------------------------------------------------------------
@@ -244,7 +244,7 @@ void DeviceInit(void)
 //	GpioDataRegs.GPASET.bit.GPIO13 = 1;		// uncomment if --> Set High initially
 //--------------------------------------------------------------------------------------
 //  GPIO-14 - PIN FUNCTION = TZ-FAULTn
-	GpioCtrlRegs.GPAMUX1.bit.GPIO14 = 1;	// 0=GPIO,  1=TZ3,  2=SCITXDB,  3=SPICLKB
+	GpioCtrlRegs.GPAMUX1.bit.GPIO14 = 3;	// 0=GPIO,  1=TZ3,  2=SCITXDB,  3=SPICLKB
 //	GpioCtrlRegs.GPADIR.bit.GPIO14 = 0;		// 1=OUTput,  0=INput 
 //	GpioDataRegs.GPACLEAR.bit.GPIO14 = 1;	// uncomment if --> Set Low initially
 //	GpioDataRegs.GPASET.bit.GPIO14 = 1;		// uncomment if --> Set High initially
@@ -257,26 +257,30 @@ void DeviceInit(void)
 //--------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------
 //  GPIO-16 - PIN FUNCTION = --Spare--
-	GpioCtrlRegs.GPAMUX2.bit.GPIO16 = 0;	// 0=GPIO, 1=SPISIMOA, 2=Resv CAN-B, 3=TZ2n
-	GpioCtrlRegs.GPADIR.bit.GPIO16 = 0;		// 1=OUTput,  0=INput 
+	GpioCtrlRegs.GPAMUX2.bit.GPIO16 = 1;	// 0=GPIO, 1=SPISIMOA, 2=Resv CAN-B, 3=TZ2n
+//	GpioCtrlRegs.GPAQSEL2.bit.GPIO16 = 3;   // Asynch input GPIO16 (SPISIMOA)
+//	GpioCtrlRegs.GPADIR.bit.GPIO16 = 0;		// 1=OUTput,  0=INput
 //	GpioDataRegs.GPACLEAR.bit.GPIO16 = 1;	// uncomment if --> Set Low initially
 //	GpioDataRegs.GPASET.bit.GPIO16 = 1;		// uncomment if --> Set High initially
 //--------------------------------------------------------------------------------------
 //  GPIO-17 - PIN FUNCTION = --Spare--
-	GpioCtrlRegs.GPAMUX2.bit.GPIO17 = 0;	// 0=GPIO, 1=SPISOMIA, 2=Resv CAN-B, 3=TZ3n
-	GpioCtrlRegs.GPADIR.bit.GPIO17 = 0;		// 1=OUTput,  0=INput 
+	GpioCtrlRegs.GPAMUX2.bit.GPIO17 = 1;	// 0=GPIO, 1=SPISOMIA, 2=Resv CAN-B, 3=TZ3n
+//	GpioCtrlRegs.GPAQSEL2.bit.GPIO17 = 3;   // Asynch input GPIO16 (SPISIMOA)
+//	GpioCtrlRegs.GPADIR.bit.GPIO17 = 0;		// 1=OUTput,  0=INput
 //	GpioDataRegs.GPACLEAR.bit.GPIO17 = 1;	// uncomment if --> Set Low initially
 //	GpioDataRegs.GPASET.bit.GPIO17 = 1;		// uncomment if --> Set High initially
 //--------------------------------------------------------------------------------------
 //  GPIO-18 - PIN FUNCTION = --Spare--
-	GpioCtrlRegs.GPAMUX2.bit.GPIO18 = 0;	// 0=GPIO, 1=SPICLKA, 2=SCITXDB, 3=XCLKOUT
-	GpioCtrlRegs.GPADIR.bit.GPIO18 = 0;		// 1=OUTput,  0=INput 
+	GpioCtrlRegs.GPAMUX2.bit.GPIO18 = 1;	// 0=GPIO, 1=SPICLKA, 2=SCITXDB, 3=XCLKOUT
+//	GpioCtrlRegs.GPAQSEL2.bit.GPIO18 = 3;   // Asynch input GPIO16 (SPISIMOA)
+//	GpioCtrlRegs.GPADIR.bit.GPIO18 = 0;		// 1=OUTput,  0=INput
 //	GpioDataRegs.GPACLEAR.bit.GPIO18 = 1;	// uncomment if --> Set Low initially
 //	GpioDataRegs.GPASET.bit.GPIO18 = 1;		// uncomment if --> Set High initially
 //--------------------------------------------------------------------------------------
 //  GPIO-19 - PIN FUNCTION = --Spare--
-	GpioCtrlRegs.GPAMUX2.bit.GPIO19 = 0;	// 0=GPIO, 1=SPISTEA, 2=SCIRXDB, 3=ECAP1
-	GpioCtrlRegs.GPADIR.bit.GPIO19 = 0;		// 1=OUTput,  0=INput 
+	GpioCtrlRegs.GPAMUX2.bit.GPIO19 = 1;	// 0=GPIO, 1=SPISTEA, 2=SCIRXDB, 3=ECAP1
+//	GpioCtrlRegs.GPAQSEL2.bit.GPIO19 = 3;   // Asynch input GPIO16 (SPISIMOA)
+//	GpioCtrlRegs.GPADIR.bit.GPIO19 = 0;		// 1=OUTput,  0=INput
 //	GpioDataRegs.GPACLEAR.bit.GPIO19 = 1;	// uncomment if --> Set Low initially
 //	GpioDataRegs.GPASET.bit.GPIO19 = 1;		// uncomment if --> Set High initially
 //--------------------------------------------------------------------------------------
@@ -465,8 +469,8 @@ void DeviceInit(void)
 //--------------------------------------------------------------------------------------
 //  GPIO-50 - PIN FUNCTION = --Spare--
 	GpioCtrlRegs.GPBMUX2.bit.GPIO50 = 0;	// 0=GPIO,  1=EQEP1A,  2=MDXA,  3=TZ1 
-	GpioCtrlRegs.GPBDIR.bit.GPIO50 = 0;		// 1=OUTput,  0=INput 
-//	GpioDataRegs.GPBCLEAR.bit.GPIO50 = 1;	// uncomment if --> Set Low initially
+	GpioCtrlRegs.GPBDIR.bit.GPIO50 = 1;		// 1=OUTput,  0=INput
+	GpioDataRegs.GPBCLEAR.bit.GPIO50 = 1;	// uncomment if --> Set Low initially
 //	GpioDataRegs.GPBSET.bit.GPIO50 = 1;		// uncomment if --> Set High initially
 //--------------------------------------------------------------------------------------
 //  GPIO-51 - PIN FUNCTION = EN_GATE
@@ -477,14 +481,14 @@ void DeviceInit(void)
 //--------------------------------------------------------------------------------------
 //  GPIO-52 - PIN FUNCTION = --Spare--
 	GpioCtrlRegs.GPBMUX2.bit.GPIO52 = 0;	// 0=GPIO,  1=EQEP1S,  2=MCLKXA,  3=TZ3 
-	GpioCtrlRegs.GPBDIR.bit.GPIO52 = 0;		// 1=OUTput,  0=INput 
-//	GpioDataRegs.GPBCLEAR.bit.GPIO52 = 1;	// uncomment if --> Set Low initially
+	GpioCtrlRegs.GPBDIR.bit.GPIO52 = 10;		// 1=OUTput,  0=INput
+	GpioDataRegs.GPBCLEAR.bit.GPIO52 = 1;	// uncomment if --> Set Low initially
 //	GpioDataRegs.GPBSET.bit.GPIO52 = 1;		// uncomment if --> Set High initially
 //--------------------------------------------------------------------------------------
 //  GPIO-53 - PIN FUNCTION = --Spare--
 	GpioCtrlRegs.GPBMUX2.bit.GPIO53 = 0;	// 0=GPIO,  1=EQEP1I,  2=MFSXA, 3=Resv 
-	GpioCtrlRegs.GPBDIR.bit.GPIO53 = 0;		// 1=OUTput,  0=INput 
-//	GpioDataRegs.GPBCLEAR.bit.GPIO53 = 1;	// uncomment if --> Set Low initially
+	GpioCtrlRegs.GPBDIR.bit.GPIO53 = 1;		// 1=OUTput,  0=INput
+	GpioDataRegs.GPBCLEAR.bit.GPIO53 = 1;	// uncomment if --> Set Low initially
 //	GpioDataRegs.GPBSET.bit.GPIO53 = 1;		// uncomment if --> Set High initially
 //--------------------------------------------------------------------------------------
 //  GPIO-54 - PIN FUNCTION = --Spare--
