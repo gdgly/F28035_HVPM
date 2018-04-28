@@ -236,6 +236,10 @@ void main(void)
     AdcRegs.ADCSOC0CTL.bit.ACQPS    = 6;   //set SOC0 S/H Window to 26 ADC Clock Cycles, (25 ACQPS plus 1)
 //    AdcRegs.INTSEL1N2.bit.INT1E     = 1;
 
+    AdcRegs.ADCSOC1CTL.bit.CHSEL    = 7;
+    AdcRegs.ADCSOC1CTL.bit.TRIGSEL  = 5;
+    AdcRegs.ADCSOC1CTL.bit.ACQPS    = 6;
+
     EDIS;
 
 
@@ -259,42 +263,22 @@ void main(void)
 
 
 	ConfigCpuTimer(&CpuTimer0, 80, 100000);
-	ConfigCpuTimer(&CpuTimer1, 80, 500000);
+	ConfigCpuTimer(&CpuTimer1, 80, 1000);
 
 	StartCpuTimer0();
 	StartCpuTimer1();
 
 	int16 data[64];
 	uint16_t adc_result_temp;
-	char s[32] = "hello world";
 	memset(data,0,sizeof(data));
 	data[0] = 0xaa;
 
-
-	ipark1.Alpha = _IQ(0.2);
-	ipark1.Beta = _IQ(-0.01);
-    svgen_dq1.Ualpha = ipark1.Alpha;
-    svgen_dq1.Ubeta = ipark1.Beta;
-    SVGEN_MACRO(svgen_dq1)
 
 
     // Initialize PWM module
     pwm1.PeriodMax = SYSTEM_FREQUENCY*1000000*T/2;  // Prescaler X1 (T1), ISR period = T x 1
     PWM_INIT_MACRO(pwm1)
 
-//    EPwm1Regs.CMPA.half.CMPA = 2000;
-//    EPwm2Regs.CMPA.half.CMPA = 1200;
-//    EPwm3Regs.CMPA.half.CMPA = 1000;
-
-//    pwm1.MfuncC1 = _IQtoQ15(svgen_dq1.Ta);
-//    pwm1.MfuncC2 = _IQtoQ15(svgen_dq1.Tb);
-//    pwm1.MfuncC3 = _IQtoQ15(svgen_dq1.Tc);
-//    PWM_MACRO(pwm1)                                // Calculate the new PWM compare values
-
-//    EPwm1Regs.CMPA.half.CMPA = 0.0001*pwm1.PeriodMax;
-//    EPwm1Regs.CMPA.half.CMPA=pwm1.PWM1out;  // PWM 1A - PhaseA
-//    EPwm2Regs.CMPA.half.CMPA=pwm1.PWM2out;  // PWM 2A - PhaseB
-//    EPwm3Regs.CMPA.half.CMPA=pwm1.PWM3out;  // PWM 3A - PhaseC
 
     // Initialize PWMDAC module
     pwmdac1.PeriodMax = 500;   // @60Mhz: 1500->20kHz, 1000-> 30kHz, 500->60kHz
@@ -363,6 +347,8 @@ void main(void)
     //write to DRV8301 control register 2, returns status register 1
     DRV8301_stat_reg1.all = DRV8301_SPI_Write(&SpiaRegs,CNTRL_REG_2_ADDR,DRV8301_cntrl_reg2.all);
 
+    float a = 0.1;
+
 	while (EnableFlag==FALSE)
 	{
 	    if(CpuTimer1Regs.TCR.bit.TIF == 1){
@@ -371,15 +357,36 @@ void main(void)
 	            DRV8301_stat_reg1.all = DRV8301_SPI_Read(&SpiaRegs,STAT_REG_1_ADDR);
 	            DRV8301_stat_reg2.all = DRV8301_SPI_Read(&SpiaRegs,STAT_REG_2_ADDR);
 	        }
-	        adc_result_temp = AdcResult.ADCRESULT0;
+
+	        a = a + 0.01;
+	        if(a > 0.8){
+	            a = 0.1;
+	        }
+	        printf("what is a %d\n",adc_result_temp);
+	        ipark1.Alpha = _IQ(a);
+	        ipark1.Beta = _IQ(0.2);
+	        svgen_dq1.Ualpha = ipark1.Alpha;
+	        svgen_dq1.Ubeta = ipark1.Beta;
+	        SVGEN_MACRO(svgen_dq1)
+
+	        pwm1.MfuncC1 = _IQtoQ15(svgen_dq1.Ta);
+	        pwm1.MfuncC2 = _IQtoQ15(svgen_dq1.Tb);
+	        pwm1.MfuncC3 = _IQtoQ15(svgen_dq1.Tc);
+	        PWM_MACRO(pwm1)                                // Calculate the new PWM compare values
+
+	        EPwm1Regs.CMPA.half.CMPA=pwm1.PWM1out;  // PWM 1A - PhaseA
+	        EPwm2Regs.CMPA.half.CMPA=pwm1.PWM2out;  // PWM 2A - PhaseB
+	        EPwm3Regs.CMPA.half.CMPA=pwm1.PWM3out;  // PWM 3A - PhaseC
+
+	        adc_result_temp = AdcResult.ADCRESULT1;
 	        CpuTimer1Regs.TCR.bit.TIF = 1;   // clear flag
 	        BackTicker++;
-            printf("this is a test led project and what is data : %s %u %u\n",s,data[0],adc_result_temp);
+
 	        while(!SciaRegs.SCICTL2.bit.TXRDY);
 	        SciaRegs.SCITXBUF = 0x53;
 	        SciaRegs.SCITXBUF = 0x02;
-//	        GpioDataRegs.GPBTOGGLE.bit.GPIO39 = 1;    // Blink LED
-	        GpioDataRegs.GPBSET.bit.GPIO39 = 1;
+	        GpioDataRegs.GPBTOGGLE.bit.GPIO39 = 1;    // Blink LED
+//	        GpioDataRegs.GPBSET.bit.GPIO39 = 1;
 	    }
 //      DELAY_US(500000);
 	}
@@ -1815,10 +1822,11 @@ interrupt void sciaRxFifoIsr(void)
     datagram[2] = SciaRegs.SCIRXBUF.all;
     datagram[3] = SciaRegs.SCIRXBUF.all;
 
-    printf("what is rev %x %x\n",datagram[0],datagram[1]);
+//    printf("what is rev %x %x\n",datagram[0],datagram[1]);
 
-    GpioDataRegs.GPBSET.bit.GPIO34 = 1;    // Blink LED
+//    GpioDataRegs.GPBSET.bit.GPIO34 = 1;    // Blink LED
 
+    GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1;    // Blink LED
     SciaRegs.SCIFFRX.bit.RXFFOVRCLR=1;   // Clear Overflow flag
     SciaRegs.SCIFFRX.bit.RXFFINTCLR=1;   // Clear Interrupt flag
 

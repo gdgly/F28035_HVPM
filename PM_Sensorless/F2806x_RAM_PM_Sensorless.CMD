@@ -50,7 +50,7 @@ PAGE 0 :
 	BOOT_RSVD	: origin = 0x000002,	length = 0x00004E             
 	RAMM0		: origin = 0x000050,	length = 0x0003B0
 	progRAM		: origin = 0x008000,	length = 0x001800
-	textRAM		: origin = 0x00F040,	length = 0x003000	/* for .text : need by storage program */
+	textRAM		: origin = 0x00F040,	length = 0x006000	/* for .text : need by storage program */
 
 	FPUTABLES   : origin = 0x3FD860, length = 0x0006A0	   /* FPU Tables in Boot ROM */
    	IQTABLES   	: origin = 0x3FDF00, length = 0x000B50     /* IQ Math Tables in Boot ROM */
