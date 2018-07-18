@@ -199,7 +199,7 @@
 						</tool>
 					</fileInfo>
 					<sourceEntries>
-						<entry excluding="F28069.cmd|F28035_RAM_PM_Sensorless.CMD|DSP2803x_Headers_nonBIOS.cmd|DSP2803x_GlobalVariableDefs.c|F2806x_FLASH_PM_Sensorless.CMD|DSP2803x_usDelay.asm|PM_Sensorless-DevInit_F2803x.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="F28035_RAM_PM_Sensorless.CMD|F28069.cmd|DSP2803x_Headers_nonBIOS.cmd|DSP2803x_GlobalVariableDefs.c|F2806x_FLASH_PM_Sensorless.CMD|DSP2803x_usDelay.asm|PM_Sensorless-DevInit_F2803x.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

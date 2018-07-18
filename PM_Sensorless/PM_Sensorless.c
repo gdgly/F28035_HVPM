@@ -41,7 +41,19 @@ void InitFlash();
 void InitSci(void);
 interrupt void sciaRxFifoIsr(void);
 interrupt void sciaTxFifoIsr(void);
+interrupt void scibRxFifoIsr(void);
+interrupt void scibTxFifoIsr(void);
 interrupt void timer0_100ms_isr(void);
+
+//user begin
+void user_adc_init(void);
+
+
+
+
+
+
+//user end
 // State Machine function prototypes
 //------------------------------------
 // Alpha states
@@ -200,48 +212,22 @@ void main(void)
 	EALLOW;  // This is needed to write to EALLOW protected registers
 	PieVectTable.SCIRXINTA = &sciaRxFifoIsr;
 //	PieVectTable.SCITXINTA = &sciaTxFifoIsr;
+	PieVectTable.SCIRXINTB = &scibRxFifoIsr;
+//  PieVectTable.SCITXINTB = &scibTxFifoIsr;
 	PieVectTable.TINT0 = &timer0_100ms_isr;
 	EDIS;   // This is needed to disable write to EALLOW protected registers
 
     InitSci();
     InitCpuTimers();
 
+    user_adc_init();
 
-
-    AdcRegs.ADCCTL1.all=ADC_RESET_FLAG;
-    asm(" NOP ");
-    asm(" NOP ");
-
-    EALLOW;
-     AdcRegs.ADCCTL1.bit.ADCBGPWD   = 1;    /* Power up band gap */
-
-    DELAY_US(ADC_usDELAY);                  /* Delay before powering up rest of ADC */
-
-    AdcRegs.ADCCTL1.bit.ADCREFSEL   = 0;
-    AdcRegs.ADCCTL1.bit.ADCREFPWD   = 1;    /* Power up reference */
-    AdcRegs.ADCCTL1.bit.ADCPWDN     = 1;    /* Power up rest of ADC */
-    AdcRegs.ADCCTL1.bit.ADCENABLE   = 1;    /* Enable ADC */
-
-    asm(" RPT#100 || NOP");
-
-    AdcRegs.ADCCTL1.bit.INTPULSEPOS=1;
-    AdcRegs.ADCCTL1.bit.TEMPCONV=0;
-
-    DELAY_US(ADC_usDELAY);
-
-    AdcRegs.ADCCTL1.bit.TEMPCONV    = 1;    //Connect internal temp sensor to channel ADCINA5.
-
-    AdcRegs.ADCSOC0CTL.bit.CHSEL    = 5;    //set SOC0 channel select to ADCINA5 (which is internally connected to the temperature sensor)
-    AdcRegs.ADCSOC0CTL.bit.TRIGSEL  = 5;    //set SOC0 start trigger on EPWM1A
-    AdcRegs.ADCSOC0CTL.bit.ACQPS    = 6;   //set SOC0 S/H Window to 26 ADC Clock Cycles, (25 ACQPS plus 1)
-//    AdcRegs.INTSEL1N2.bit.INT1E     = 1;
-
-    AdcRegs.ADCSOC1CTL.bit.CHSEL    = 7;
-    AdcRegs.ADCSOC1CTL.bit.TRIGSEL  = 5;
-    AdcRegs.ADCSOC1CTL.bit.ACQPS    = 6;
-
-    EDIS;
-
+    // Initialize QEP module
+    qep1.LineEncoder = 1000;
+    qep1.MechScaler = _IQ30(0.25/qep1.LineEncoder);
+    qep1.PolePairs = POLES/2;
+    qep1.CalibratedAngle = 0;
+    QEP_INIT_MACRO(qep1)
 
 //    /* Set up Event Trigger with CNT_zero enable for Time-base of EPWM1 */
     EPwm1Regs.ETSEL.bit.SOCAEN = 1;     /* Enable SOCA */
@@ -253,6 +239,9 @@ void main(void)
     EPwm1Regs.TBCTL.bit.CTRMODE  = 0;        // count up and start
 
 	PieCtrlRegs.PIEIER9.bit.INTx1=1;     // PIE Group 9, INT1
+//	PieCtrlRegs.PIEIER9.bit.INTx2=1;     // PIE Group 9, INT1
+	PieCtrlRegs.PIEIER9.bit.INTx3=1;     // PIE Group 9, INT1
+//	PieCtrlRegs.PIEIER9.bit.INTx4=1;     // PIE Group 9, INT1
     IER |= M_INT9; // Enable CPU INT
 
 	PieCtrlRegs.PIEIER1.bit.INTx1 = 1;  // Enable INT 1.1 in the PIE
@@ -269,7 +258,7 @@ void main(void)
 	StartCpuTimer1();
 
 	int16 data[64];
-	uint16_t adc_result_temp;
+	uint16_t adc_result_temp[16];
 	memset(data,0,sizeof(data));
 	data[0] = 0xaa;
 
@@ -301,32 +290,32 @@ void main(void)
     DELAY_US(500000);
 
 #ifdef F2806x_DEVICE_H
-    GpioDataRegs.GPBSET.bit.GPIO50 = 1;
+    GpioDataRegs.GPBSET.bit.GPIO50 = 0;
     GpioDataRegs.GPBSET.bit.GPIO51 = 1;
 #endif
 
     DELAY_US(50000);        //delay to allow DRV830x supplies to ramp up
 
     DRV8301_cntrl_reg1.bit.GATE_CURRENT = 0;        // full current 1.7A
-//          DRV8301_cntrl_reg1.bit.GATE_CURRENT = 1;        // med current 0.7A
-//          DRV8301_cntrl_reg1.bit.GATE_CURRENT = 2;        // min current 0.25A
+//  DRV8301_cntrl_reg1.bit.GATE_CURRENT = 1;        // med current 0.7A
+//  DRV8301_cntrl_reg1.bit.GATE_CURRENT = 2;        // min current 0.25A
     DRV8301_cntrl_reg1.bit.GATE_RESET = 0;          // Normal Mode
     DRV8301_cntrl_reg1.bit.PWM_MODE = 0;            // six independant PWMs
-//          DRV8301_cntrl_reg1.bit.OC_MODE = 0;             // current limiting when OC detected
+//  DRV8301_cntrl_reg1.bit.OC_MODE = 0;             // current limiting when OC detected
     DRV8301_cntrl_reg1.bit.OC_MODE = 1;             // latched OC shutdown
-//          DRV8301_cntrl_reg1.bit.OC_MODE = 2;             // Report on OCTWn pin and SPI reg only, no shut-down
-//          DRV8301_cntrl_reg1.bit.OC_MODE = 3;             // OC protection disabled
-//          DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 0;          // OC @ Vds=0.060V
-//          DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 4;          // OC @ Vds=0.097V
-//          DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 6;          // OC @ Vds=0.123V
-//          DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 9;          // OC @ Vds=0.175V
+//  DRV8301_cntrl_reg1.bit.OC_MODE = 2;             // Report on OCTWn pin and SPI reg only, no shut-down
+//  DRV8301_cntrl_reg1.bit.OC_MODE = 3;             // OC protection disabled
+//  DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 0;          // OC @ Vds=0.060V
+//  DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 4;          // OC @ Vds=0.097V
+//  DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 6;          // OC @ Vds=0.123V
+//  DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 9;          // OC @ Vds=0.175V
     DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 15;         // OC @ Vds=0.358V
-//          DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 16;         // OC @ Vds=0.403V
-//          DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 17;         // OC @ Vds=0.454V
-//          DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 18;         // OC @ Vds=0.511V
+//  DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 16;         // OC @ Vds=0.403V
+//  DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 17;         // OC @ Vds=0.454V
+//  DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 18;         // OC @ Vds=0.511V
     DRV8301_cntrl_reg1.bit.Reserved = 0;
 
-//          DRV8301_cntrl_reg2.bit.OCTW_SET = 0;            // report OT and OC
+//  DRV8301_cntrl_reg2.bit.OCTW_SET = 0;            // report OT and OC
     DRV8301_cntrl_reg2.bit.OCTW_SET = 1;            // report OT only
 #if DRV_GAIN == 10
     DRV8301_cntrl_reg2.bit.GAIN = 0;                // CS amplifier gain = 10
@@ -349,6 +338,7 @@ void main(void)
 
     float a = 0.1;
 
+
 	while (EnableFlag==FALSE)
 	{
 	    if(CpuTimer1Regs.TCR.bit.TIF == 1){
@@ -358,13 +348,32 @@ void main(void)
 	            DRV8301_stat_reg2.all = DRV8301_SPI_Read(&SpiaRegs,STAT_REG_2_ADDR);
 	        }
 
+	        QEP_MACRO(qep1);
+
+	        float electdegree, mechdegree;
+
+	        electdegree = _IQtoF(qep1.ElecTheta);
+	        mechdegree = _IQtoF(qep1.MechTheta);
+
+	        int32 qep_cnt = 0;
+	        qep_cnt = EQep1Regs.QPOSCNT;
+
 	        a = a + 0.01;
 	        if(a > 0.8){
 	            a = 0.1;
 	        }
-	        printf("what is a %d\n",adc_result_temp);
-	        ipark1.Alpha = _IQ(a);
-	        ipark1.Beta = _IQ(0.2);
+//            printf("what is a %f %f %ld\n", electdegree, mechdegree, qep_cnt);
+
+            ipark1.Ds = VdTesting;
+            ipark1.Qs = VqTesting;
+
+            ipark1.Sine=_IQsinPU(qep1.ElecTheta);
+            ipark1.Cosine=_IQcosPU(qep1.ElecTheta);
+            IPARK_MACRO(ipark1)
+
+
+//	        ipark1.Alpha = _IQ(a);
+//	        ipark1.Beta = _IQ(0.2);
 	        svgen_dq1.Ualpha = ipark1.Alpha;
 	        svgen_dq1.Ubeta = ipark1.Beta;
 	        SVGEN_MACRO(svgen_dq1)
@@ -378,14 +387,34 @@ void main(void)
 	        EPwm2Regs.CMPA.half.CMPA=pwm1.PWM2out;  // PWM 2A - PhaseB
 	        EPwm3Regs.CMPA.half.CMPA=pwm1.PWM3out;  // PWM 3A - PhaseC
 
-	        adc_result_temp = AdcResult.ADCRESULT1;
+	        adc_result_temp[0] = AdcResult.ADCRESULT0;
+	        adc_result_temp[1] = AdcResult.ADCRESULT1;
+	        adc_result_temp[2] = AdcResult.ADCRESULT2;
+	        adc_result_temp[3] = AdcResult.ADCRESULT3;
+	        adc_result_temp[4] = AdcResult.ADCRESULT4;
+	        adc_result_temp[5] = AdcResult.ADCRESULT5;
+	        adc_result_temp[6] = AdcResult.ADCRESULT6;
+	        adc_result_temp[7] = AdcResult.ADCRESULT7;
+
+
+
 	        CpuTimer1Regs.TCR.bit.TIF = 1;   // clear flag
 	        BackTicker++;
 
-	        while(!SciaRegs.SCICTL2.bit.TXRDY);
-	        SciaRegs.SCITXBUF = 0x53;
-	        SciaRegs.SCITXBUF = 0x02;
-	        GpioDataRegs.GPBTOGGLE.bit.GPIO39 = 1;    // Blink LED
+//	        while(!SciaRegs.SCICTL2.bit.TXRDY);
+//	        SciaRegs.SCITXBUF = 0x53;
+//	        SciaRegs.SCITXBUF = 0x02;
+	        static int tx_cnt = 0;
+	        tx_cnt++;
+	        if(tx_cnt > 10){
+	            while(!ScibRegs.SCICTL2.bit.TXRDY);
+	            ScibRegs.SCITXBUF = 0x53;
+	            ScibRegs.SCITXBUF = 0x02;
+	            tx_cnt = 0;
+	        }
+
+
+//	        GpioDataRegs.GPBTOGGLE.bit.GPIO39 = 1;    // Blink LED
 //	        GpioDataRegs.GPBSET.bit.GPIO39 = 1;
 	    }
 //      DELAY_US(500000);
@@ -1860,6 +1889,90 @@ interrupt void timer0_100ms_isr(void)
 
 }
 
+interrupt void scibRxFifoIsr(void)
+{
+    ScibRegs.SCIFFRX.bit.RXFFOVRCLR=1;   // Clear Overflow flag
+    ScibRegs.SCIFFRX.bit.RXFFINTCLR=1;   // Clear Interrupt flag
+
+    uint16_t datagram[16];
+
+    datagram[0] = ScibRegs.SCIRXBUF.all;
+    datagram[1] = ScibRegs.SCIRXBUF.all;
+    datagram[2] = ScibRegs.SCIRXBUF.all;
+    datagram[3] = ScibRegs.SCIRXBUF.all;
+    PieCtrlRegs.PIEACK.all|=0x100;       // Issue PIE ack
+}
+
+
+interrupt void scibTxFifoIsr(void)
+{
+
+
+}
+
+void user_adc_init(void)
+{
+    AdcRegs.ADCCTL1.all=ADC_RESET_FLAG;
+    asm(" NOP ");
+    asm(" NOP ");
+
+    EALLOW;
+     AdcRegs.ADCCTL1.bit.ADCBGPWD   = 1;    /* Power up band gap */
+
+    DELAY_US(ADC_usDELAY);                  /* Delay before powering up rest of ADC */
+
+    AdcRegs.ADCCTL1.bit.ADCREFSEL   = 0;
+    AdcRegs.ADCCTL1.bit.ADCREFPWD   = 1;    /* Power up reference */
+    AdcRegs.ADCCTL1.bit.ADCPWDN     = 1;    /* Power up rest of ADC */
+    AdcRegs.ADCCTL1.bit.ADCENABLE   = 1;    /* Enable ADC */
+
+    asm(" RPT#100 || NOP");
+
+    AdcRegs.ADCCTL1.bit.INTPULSEPOS=1;
+    AdcRegs.ADCCTL1.bit.TEMPCONV=0;
+
+    DELAY_US(ADC_usDELAY);
+
+    AdcRegs.ADCCTL1.bit.TEMPCONV    = 1;    //Connect internal temp sensor to channel ADCINA5.
+
+    AdcRegs.ADCSOC0CTL.bit.CHSEL    = 5;    //set SOC0 channel select to ADCINA5 (which is internally connected to the temperature sensor)
+    AdcRegs.ADCSOC0CTL.bit.TRIGSEL  = 5;    //set SOC0 start trigger on EPWM1A
+    AdcRegs.ADCSOC0CTL.bit.ACQPS    = 6;   //set SOC0 S/H Window to 26 ADC Clock Cycles, (25 ACQPS plus 1)
+//    AdcRegs.INTSEL1N2.bit.INT1E     = 1;
+
+    AdcRegs.ADCSOC1CTL.bit.CHSEL    = 0;
+    AdcRegs.ADCSOC1CTL.bit.TRIGSEL  = 5;
+    AdcRegs.ADCSOC1CTL.bit.ACQPS    = 6;
+
+    AdcRegs.ADCSOC2CTL.bit.CHSEL    = 8;
+    AdcRegs.ADCSOC2CTL.bit.TRIGSEL  = 5;
+    AdcRegs.ADCSOC2CTL.bit.ACQPS    = 6;
+
+    AdcRegs.ADCSOC3CTL.bit.CHSEL    = 1;
+    AdcRegs.ADCSOC3CTL.bit.TRIGSEL  = 5;
+    AdcRegs.ADCSOC3CTL.bit.ACQPS    = 6;
+
+    AdcRegs.ADCSOC4CTL.bit.CHSEL    = 9;
+    AdcRegs.ADCSOC4CTL.bit.TRIGSEL  = 5;
+    AdcRegs.ADCSOC4CTL.bit.ACQPS    = 6;
+
+    AdcRegs.ADCSOC5CTL.bit.CHSEL    = 2;
+    AdcRegs.ADCSOC5CTL.bit.TRIGSEL  = 5;
+    AdcRegs.ADCSOC5CTL.bit.ACQPS    = 6;
+
+    AdcRegs.ADCSOC6CTL.bit.CHSEL    = 10;
+    AdcRegs.ADCSOC6CTL.bit.TRIGSEL  = 5;
+    AdcRegs.ADCSOC6CTL.bit.ACQPS    = 6;
+
+    AdcRegs.ADCSOC7CTL.bit.CHSEL    = 7;
+    AdcRegs.ADCSOC7CTL.bit.TRIGSEL  = 5;
+    AdcRegs.ADCSOC7CTL.bit.ACQPS    = 6;
+
+    EDIS;
+
+
+
+}
 
 //===========================================================================
 // No more.

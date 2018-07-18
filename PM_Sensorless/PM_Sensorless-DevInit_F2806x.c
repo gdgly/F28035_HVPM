@@ -106,7 +106,7 @@ void DeviceInit(void)
    SysCtrlRegs.PCLKCR0.bit.MCBSPAENCLK = 0;	// McBSP-A
    //------------------------------------------------
    SysCtrlRegs.PCLKCR0.bit.SCIAENCLK = 1;   // SCI-A
-   SysCtrlRegs.PCLKCR0.bit.SCIBENCLK = 0;	// SCI-B
+   SysCtrlRegs.PCLKCR0.bit.SCIBENCLK = 1;	// SCI-B
    //------------------------------------------------
    SysCtrlRegs.PCLKCR0.bit.ECANAENCLK = 0;  // eCAN-A
    //------------------------------------------------
@@ -214,7 +214,7 @@ void DeviceInit(void)
 //	GpioDataRegs.GPASET.bit.GPIO8 = 1;		// uncomment if --> Set High initially
 //--------------------------------------------------------------------------------------
 //  GPIO-09 - PIN FUNCTION =  START
-	GpioCtrlRegs.GPAMUX1.bit.GPIO9 = 1;		// 0=GPIO,  1=EPWM5B,  2=SCITXDB,  3=ECAP3
+	GpioCtrlRegs.GPAMUX1.bit.GPIO9 = 2;		// 0=GPIO,  1=EPWM5B,  2=SCITXDB,  3=ECAP3
 //	GpioCtrlRegs.GPADIR.bit.GPIO9 = 0;		// 1=OUTput,  0=INput
 //	GpioDataRegs.GPACLEAR.bit.GPIO9 = 1;	// uncomment if --> Set Low initially
 //	GpioDataRegs.GPASET.bit.GPIO9 = 1;		// uncomment if --> Set High initially
@@ -226,7 +226,7 @@ void DeviceInit(void)
 //	GpioDataRegs.GPASET.bit.GPIO10 = 1;		// uncomment if --> Set High initially
 //--------------------------------------------------------------------------------------
 //  GPIO-11 - PIN FUNCTION = DAC_PWM2
-	GpioCtrlRegs.GPAMUX1.bit.GPIO11 = 1;	// 0=GPIO,  1=EPWM6B,  2=SCIRXDB,  3=ECAP1
+	GpioCtrlRegs.GPAMUX1.bit.GPIO11 = 2;	// 0=GPIO,  1=EPWM6B,  2=SCIRXDB,  3=ECAP1
 //	GpioCtrlRegs.GPADIR.bit.GPIO11 = 0;		// 1=OUTput,  0=INput 
 //	GpioDataRegs.GPACLEAR.bit.GPIO11 = 1;	// uncomment if --> Set Low initially
 //	GpioDataRegs.GPASET.bit.GPIO11 = 1;		// uncomment if --> Set High initially
@@ -738,6 +738,7 @@ void MemCopy(Uint16 *SourceAddr, Uint16* SourceEndAddr, Uint16* DestAddr)
 
 void InitSci()
 {
+    //scia
     SciaRegs.SCICCR.all =0x0007;   // 1 stop bit,  No loopback
                                    // No parity,8 char bits,
                                    // async mode, idle-line protocol
@@ -747,7 +748,7 @@ void InitSci()
     SciaRegs.SCICTL2.bit.RXBKINTENA =1;
     SciaRegs.SCIHBAUD = 0x0000;
     SciaRegs.SCILBAUD = 0x0014;       //80 MHz SYSCLK baud 115200
-    SciaRegs.SCICCR.bit.LOOPBKENA =1; // Enable loop back
+    SciaRegs.SCICCR.bit.LOOPBKENA =0; // Disable loop back
     SciaRegs.SCIFFTX.all=0xC022;      //set FIFO deep 2
     SciaRegs.SCIFFRX.all=0x0024;      //set FIFO deep 4
     SciaRegs.SCIFFCT.all=0x00;
@@ -756,6 +757,24 @@ void InitSci()
     SciaRegs.SCIFFTX.bit.TXFIFOXRESET=1;
     SciaRegs.SCIFFRX.bit.RXFIFORESET=1;
 
+    //scib
+    ScibRegs.SCICCR.all =0x0007;   // 1 stop bit,  No loopback
+                                   // No parity,8 char bits,
+                                   // async mode, idle-line protocol
+    ScibRegs.SCICTL1.all =0x0003;  // enable TX, RX, internal SCICLK,
+                                   // Disable RX ERR, SLEEP, TXWAKE
+    ScibRegs.SCICTL2.bit.TXINTENA =0;
+    ScibRegs.SCICTL2.bit.RXBKINTENA =1;
+    ScibRegs.SCIHBAUD = 0x0000;
+    ScibRegs.SCILBAUD = 0x0016;       //80 MHz SYSCLK baud 115200
+    ScibRegs.SCICCR.bit.LOOPBKENA =0; // Disable loop back
+    ScibRegs.SCIFFTX.all=0xC02f;      //set FIFO deep 2
+    ScibRegs.SCIFFRX.all=0x0024;      //set FIFO deep 4
+    ScibRegs.SCIFFCT.all=0x00;
+
+    ScibRegs.SCICTL1.all =0x0023;     // Relinquish SCI from Reset
+    ScibRegs.SCIFFTX.bit.TXFIFOXRESET=1;
+    ScibRegs.SCIFFRX.bit.RXFIFORESET=1;
 }
 //===========================================================================
 // End of file.

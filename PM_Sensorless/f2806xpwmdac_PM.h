@@ -166,7 +166,7 @@ Default Initializers for the F280X PWMGEN Object
 																	\
     GpioCtrlRegs.GPAMUX1.bit.GPIO8 = 1;     /* EPWM5A pin*/			\
     GpioCtrlRegs.GPAMUX1.bit.GPIO10 = 1;    /* EPWM6A pin*/			\
-    GpioCtrlRegs.GPAMUX1.bit.GPIO11 = 1;    /* EPWM6B pin*/			\
+//    GpioCtrlRegs.GPAMUX1.bit.GPIO11 = 1;    /* EPWM6B pin*/			\
     GpioCtrlRegs.GPAMUX1.bit.GPIO6 = 1;     /* EPWM4A pin*/			\
       																\
     EDIS;                             /* Disable EALLOW*/				
