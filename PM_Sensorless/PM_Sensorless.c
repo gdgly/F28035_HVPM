@@ -47,13 +47,12 @@ interrupt void timer0_100ms_isr(void);
 
 //user begin
 void user_adc_init(void);
-
-
-
-
-
-
+void user_qep_init(void);
+void user_pwm_init(void);
+void user_epwm_init(void);
+void user_drv8301_init(void);
 //user end
+
 // State Machine function prototypes
 //------------------------------------
 // Alpha states
@@ -221,22 +220,7 @@ void main(void)
     InitCpuTimers();
 
     user_adc_init();
-
-    // Initialize QEP module
-    qep1.LineEncoder = 1000;
-    qep1.MechScaler = _IQ30(0.25/qep1.LineEncoder);
-    qep1.PolePairs = POLES/2;
-    qep1.CalibratedAngle = 0;
-    QEP_INIT_MACRO(qep1)
-
-//    /* Set up Event Trigger with CNT_zero enable for Time-base of EPWM1 */
-    EPwm1Regs.ETSEL.bit.SOCAEN = 1;     /* Enable SOCA */
-    EPwm1Regs.ETSEL.bit.SOCASEL = 1;    /* Enable CNT_zero event for SOCA */
-    EPwm1Regs.ETPS.bit.SOCAPRD = 1;     /* Generate SOCA on the 1st event */
-    EPwm1Regs.ETCLR.bit.SOCA = 1;       /* Clear SOCA flag */
-//    EPwm1Regs.CMPA.half.CMPA    = 0x0080;   // Set compare A value
-//    EPwm1Regs.TBPRD              = SYSTEM_FREQUENCY*1000000*T/2;;   // Set period for ePWM1
-    EPwm1Regs.TBCTL.bit.CTRMODE  = 0;        // count up and start
+    user_qep_init();
 
 	PieCtrlRegs.PIEIER9.bit.INTx1=1;     // PIE Group 9, INT1
 //	PieCtrlRegs.PIEIER9.bit.INTx2=1;     // PIE Group 9, INT1
@@ -262,84 +246,11 @@ void main(void)
 	memset(data,0,sizeof(data));
 	data[0] = 0xaa;
 
+	user_epwm_init();
+	user_pwm_init();
+    user_drv8301_init();
 
-
-    // Initialize PWM module
-    pwm1.PeriodMax = SYSTEM_FREQUENCY*1000000*T/2;  // Prescaler X1 (T1), ISR period = T x 1
-    PWM_INIT_MACRO(pwm1)
-
-
-    // Initialize PWMDAC module
-    pwmdac1.PeriodMax = 500;   // @60Mhz: 1500->20kHz, 1000-> 30kHz, 500->60kHz
-    pwmdac1.PwmDacInPointer0 = &PwmDacCh1;
-    pwmdac1.PwmDacInPointer1 = &PwmDacCh2;
-    pwmdac1.PwmDacInPointer2 = &PwmDacCh3;
-    pwmdac1.PwmDacInPointer3 = &PwmDacCh4;
-
-    PWMDAC_INIT_MACRO(pwmdac1)
-
-    DRV8301_SPI_Init(&SpiaRegs);
-    GpioDataRegs.GPBCLEAR.bit.GPIO50 = 1;
-
-//    EALLOW;
-//    EPwm1Regs.TZFRC.bit.OST=1;
-//    EPwm2Regs.TZFRC.bit.OST=1;
-//    EPwm3Regs.TZFRC.bit.OST=1;
-//    EDIS;
-
-    DELAY_US(500000);
-
-#ifdef F2806x_DEVICE_H
-    GpioDataRegs.GPBSET.bit.GPIO50 = 0;
-    GpioDataRegs.GPBSET.bit.GPIO51 = 1;
-#endif
-
-    DELAY_US(50000);        //delay to allow DRV830x supplies to ramp up
-
-    DRV8301_cntrl_reg1.bit.GATE_CURRENT = 0;        // full current 1.7A
-//  DRV8301_cntrl_reg1.bit.GATE_CURRENT = 1;        // med current 0.7A
-//  DRV8301_cntrl_reg1.bit.GATE_CURRENT = 2;        // min current 0.25A
-    DRV8301_cntrl_reg1.bit.GATE_RESET = 0;          // Normal Mode
-    DRV8301_cntrl_reg1.bit.PWM_MODE = 0;            // six independant PWMs
-//  DRV8301_cntrl_reg1.bit.OC_MODE = 0;             // current limiting when OC detected
-    DRV8301_cntrl_reg1.bit.OC_MODE = 1;             // latched OC shutdown
-//  DRV8301_cntrl_reg1.bit.OC_MODE = 2;             // Report on OCTWn pin and SPI reg only, no shut-down
-//  DRV8301_cntrl_reg1.bit.OC_MODE = 3;             // OC protection disabled
-//  DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 0;          // OC @ Vds=0.060V
-//  DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 4;          // OC @ Vds=0.097V
-//  DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 6;          // OC @ Vds=0.123V
-//  DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 9;          // OC @ Vds=0.175V
-    DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 15;         // OC @ Vds=0.358V
-//  DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 16;         // OC @ Vds=0.403V
-//  DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 17;         // OC @ Vds=0.454V
-//  DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 18;         // OC @ Vds=0.511V
-    DRV8301_cntrl_reg1.bit.Reserved = 0;
-
-//  DRV8301_cntrl_reg2.bit.OCTW_SET = 0;            // report OT and OC
-    DRV8301_cntrl_reg2.bit.OCTW_SET = 1;            // report OT only
-#if DRV_GAIN == 10
-    DRV8301_cntrl_reg2.bit.GAIN = 0;                // CS amplifier gain = 10
-#elif DRV_GAIN == 20
-    DRV8301_cntrl_reg2.bit.GAIN = 1;                // CS amplifier gain = 20
-#elif DRV_GAIN == 40
-    DRV8301_cntrl_reg2.bit.GAIN = 2;                // CS amplifier gain = 40
-#elif DRV_GAIN == 80
-    DRV8301_cntrl_reg2.bit.GAIN = 3;                // CS amplifier gain = 80
-#endif
-    DRV8301_cntrl_reg2.bit.DC_CAL_CH1 = 0;          // not in CS calibrate mode
-    DRV8301_cntrl_reg2.bit.DC_CAL_CH2 = 0;          // not in CS calibrate mode
-    DRV8301_cntrl_reg2.bit.OC_TOFF = 0;             // normal mode
-    DRV8301_cntrl_reg2.bit.Reserved = 0;
-
-    //write to DRV8301 control register 1, returns status register 1
-    DRV8301_stat_reg1.all = DRV8301_SPI_Write(&SpiaRegs,CNTRL_REG_1_ADDR,DRV8301_cntrl_reg1.all);
-    //write to DRV8301 control register 2, returns status register 1
-    DRV8301_stat_reg1.all = DRV8301_SPI_Write(&SpiaRegs,CNTRL_REG_2_ADDR,DRV8301_cntrl_reg2.all);
-
-    float a = 0.1;
-
-
-	while (EnableFlag==FALSE)
+    while (EnableFlag==FALSE)
 	{
 	    if(CpuTimer1Regs.TCR.bit.TIF == 1){
 	        if(GpioDataRegs.GPADAT.bit.GPIO18 == 0)
@@ -358,22 +269,33 @@ void main(void)
 	        int32 qep_cnt = 0;
 	        qep_cnt = EQep1Regs.QPOSCNT;
 
-	        a = a + 0.01;
-	        if(a > 0.8){
-	            a = 0.1;
+	        clarke1.As=(((AdcResult.ADCRESULT0)*0.00024414-cal_offset_A)*2); // Phase A curr.
+	        clarke1.Bs=(((AdcResult.ADCRESULT1)*0.00024414-cal_offset_B)*2); // Phase B curr.
+
+	        park1.Alpha = clarke1.Alpha;
+	        park1.Beta = clarke1.Beta;
+	        park1.Angle = qep1.ElecTheta;
+	        park1.Sine = _IQsinPU(park1.Angle);
+	        park1.Cosine = _IQcosPU(park1.Angle);
+	        PARK_MACRO(park1)
+
+	        //start pid
+	        pid1_id.param.Kp = _IQ(3.176*BASE_CURRENT/BASE_VOLTAGE);
+	        pid1_id.term.Out = park1.Ds * pid1_id.param.Kp;
+	        if(pid1_id.term.Out > 1){
+	            pid1_id.term.Out = 1;
+	        }else if(pid1_id.term.Out < -1>){
+	            pid1_id.term.Out = -1;
 	        }
-//            printf("what is a %f %f %ld\n", electdegree, mechdegree, qep_cnt);
+	        //end pid
 
-            ipark1.Ds = VdTesting;
+//            ipark1.Ds = VdTesting;
+            ipark1.Ds = pid1_id.term.Out;
             ipark1.Qs = VqTesting;
-
-            ipark1.Sine=_IQsinPU(qep1.ElecTheta);
-            ipark1.Cosine=_IQcosPU(qep1.ElecTheta);
+            ipark1.Sine = park1.Sine;
+            ipark1.Cosine = park1.Cosine;
             IPARK_MACRO(ipark1)
 
-
-//	        ipark1.Alpha = _IQ(a);
-//	        ipark1.Beta = _IQ(0.2);
 	        svgen_dq1.Ualpha = ipark1.Alpha;
 	        svgen_dq1.Ubeta = ipark1.Beta;
 	        SVGEN_MACRO(svgen_dq1)
@@ -389,12 +311,19 @@ void main(void)
 
 	        adc_result_temp[0] = AdcResult.ADCRESULT0;
 	        adc_result_temp[1] = AdcResult.ADCRESULT1;
+	        int16 i_a1 = (int16)((adc_result_temp[1] - 2048)*0.00083*10);
 	        adc_result_temp[2] = AdcResult.ADCRESULT2;
+            int16 i_b1 = (int16)((adc_result_temp[2] - 2048)*0.00083*10);
 	        adc_result_temp[3] = AdcResult.ADCRESULT3;
+            int16 i_c1 = (int16)((adc_result_temp[3] - 2048)*0.00083*10);
 	        adc_result_temp[4] = AdcResult.ADCRESULT4;
+            Uint16 v_a1 = (Uint16)(adc_result_temp[4]*0.00585*10);
 	        adc_result_temp[5] = AdcResult.ADCRESULT5;
+	        Uint16 v_b1 = (Uint16)(adc_result_temp[5]*0.00585*10);
 	        adc_result_temp[6] = AdcResult.ADCRESULT6;
+	        Uint16 v_c1 = (Uint16)(adc_result_temp[6]*0.00585*10);
 	        adc_result_temp[7] = AdcResult.ADCRESULT7;
+	        Uint16 v_dc = (Uint16)(adc_result_temp[7]*0.00585*10);
 
 
 
@@ -409,7 +338,21 @@ void main(void)
 	        if(tx_cnt > 10){
 	            while(!ScibRegs.SCICTL2.bit.TXRDY);
 	            ScibRegs.SCITXBUF = 0x53;
-	            ScibRegs.SCITXBUF = 0x02;
+//	            ScibRegs.SCITXBUF = 0x02;
+	            ScibRegs.SCITXBUF = i_a1>>8&0xff;
+	            ScibRegs.SCITXBUF = i_a1&0xff;
+	            ScibRegs.SCITXBUF = i_b1>>8&0xff;
+                ScibRegs.SCITXBUF = i_b1&0xff;
+	            ScibRegs.SCITXBUF = i_c1>>8&0xff;
+                ScibRegs.SCITXBUF = i_c1&0xff;
+	            ScibRegs.SCITXBUF = v_a1>>8&0xff;
+                ScibRegs.SCITXBUF = v_a1&0xff;
+	            ScibRegs.SCITXBUF = v_b1>>8&0xff;
+                ScibRegs.SCITXBUF = v_b1&0xff;
+	            ScibRegs.SCITXBUF = v_c1>>8&0xff;
+                ScibRegs.SCITXBUF = v_c1&0xff;
+                ScibRegs.SCITXBUF = v_dc>>8&0xff;
+                ScibRegs.SCITXBUF = v_dc&0xff;
 	            tx_cnt = 0;
 	        }
 
@@ -1940,37 +1883,140 @@ void user_adc_init(void)
     AdcRegs.ADCSOC0CTL.bit.ACQPS    = 6;   //set SOC0 S/H Window to 26 ADC Clock Cycles, (25 ACQPS plus 1)
 //    AdcRegs.INTSEL1N2.bit.INT1E     = 1;
 
-    AdcRegs.ADCSOC1CTL.bit.CHSEL    = 0;
+    AdcRegs.ADCSOC1CTL.bit.CHSEL    = 0;    //ADC for ADCINA0 connected to the I_A1
     AdcRegs.ADCSOC1CTL.bit.TRIGSEL  = 5;
     AdcRegs.ADCSOC1CTL.bit.ACQPS    = 6;
 
-    AdcRegs.ADCSOC2CTL.bit.CHSEL    = 8;
+    AdcRegs.ADCSOC2CTL.bit.CHSEL    = 8;    //ADC for ADCINB0 connected to the I_B1
     AdcRegs.ADCSOC2CTL.bit.TRIGSEL  = 5;
     AdcRegs.ADCSOC2CTL.bit.ACQPS    = 6;
 
-    AdcRegs.ADCSOC3CTL.bit.CHSEL    = 1;
+    AdcRegs.ADCSOC3CTL.bit.CHSEL    = 1;    //ADC for ADCINA1 connected to the I_C1
     AdcRegs.ADCSOC3CTL.bit.TRIGSEL  = 5;
     AdcRegs.ADCSOC3CTL.bit.ACQPS    = 6;
 
-    AdcRegs.ADCSOC4CTL.bit.CHSEL    = 9;
+    AdcRegs.ADCSOC4CTL.bit.CHSEL    = 9;    //ADC for ADCINB1 connected to the V_A1
     AdcRegs.ADCSOC4CTL.bit.TRIGSEL  = 5;
     AdcRegs.ADCSOC4CTL.bit.ACQPS    = 6;
 
-    AdcRegs.ADCSOC5CTL.bit.CHSEL    = 2;
+    AdcRegs.ADCSOC5CTL.bit.CHSEL    = 2;    //ADC for ADCINA2 connected to the V_B1
     AdcRegs.ADCSOC5CTL.bit.TRIGSEL  = 5;
     AdcRegs.ADCSOC5CTL.bit.ACQPS    = 6;
 
-    AdcRegs.ADCSOC6CTL.bit.CHSEL    = 10;
+    AdcRegs.ADCSOC6CTL.bit.CHSEL    = 10;   //ADC for ADCINB2 connected to the V_C1
     AdcRegs.ADCSOC6CTL.bit.TRIGSEL  = 5;
     AdcRegs.ADCSOC6CTL.bit.ACQPS    = 6;
 
-    AdcRegs.ADCSOC7CTL.bit.CHSEL    = 7;
+    AdcRegs.ADCSOC7CTL.bit.CHSEL    = 7;    //ADC for ADCINA7 connected to the V_DC
     AdcRegs.ADCSOC7CTL.bit.TRIGSEL  = 5;
     AdcRegs.ADCSOC7CTL.bit.ACQPS    = 6;
 
     EDIS;
 
 
+
+}
+
+void user_qep_init(void)
+{
+    // Initialize QEP module
+    qep1.LineEncoder = 1000;
+    qep1.MechScaler = _IQ30(0.25/qep1.LineEncoder);
+    qep1.PolePairs = POLES/2;
+    qep1.CalibratedAngle = 0;
+    QEP_INIT_MACRO(qep1)
+
+}
+
+
+void user_epwm_init(void)
+{
+    /* Set up Event Trigger with CNT_zero enable for Time-base of EPWM1 */
+    EPwm1Regs.ETSEL.bit.SOCAEN = 1;     /* Enable SOCA */
+    EPwm1Regs.ETSEL.bit.SOCASEL = 1;    /* Enable CNT_zero event for SOCA */
+    EPwm1Regs.ETPS.bit.SOCAPRD = 1;     /* Generate SOCA on the 1st event */
+    EPwm1Regs.ETCLR.bit.SOCA = 1;       /* Clear SOCA flag */
+//    EPwm1Regs.CMPA.half.CMPA    = 0x0080;   // Set compare A value
+//    EPwm1Regs.TBPRD              = SYSTEM_FREQUENCY*1000000*T/2;;   // Set period for ePWM1
+    EPwm1Regs.TBCTL.bit.CTRMODE  = 0;        // count up and start
+}
+
+void user_pwm_init(void)
+{
+    // Initialize PWM module
+    pwm1.PeriodMax = SYSTEM_FREQUENCY*1000000*T/2;  // Prescaler X1 (T1), ISR period = T x 1
+    PWM_INIT_MACRO(pwm1)
+
+
+    // Initialize PWMDAC module
+    pwmdac1.PeriodMax = 500;   // @60Mhz: 1500->20kHz, 1000-> 30kHz, 500->60kHz
+    pwmdac1.PwmDacInPointer0 = &PwmDacCh1;
+    pwmdac1.PwmDacInPointer1 = &PwmDacCh2;
+    pwmdac1.PwmDacInPointer2 = &PwmDacCh3;
+    pwmdac1.PwmDacInPointer3 = &PwmDacCh4;
+
+    PWMDAC_INIT_MACRO(pwmdac1)
+}
+
+void user_drv8301_init(void)
+{
+    DRV8301_SPI_Init(&SpiaRegs);
+    GpioDataRegs.GPBCLEAR.bit.GPIO50 = 1;
+
+//    EALLOW;
+//    EPwm1Regs.TZFRC.bit.OST=1;
+//    EPwm2Regs.TZFRC.bit.OST=1;
+//    EPwm3Regs.TZFRC.bit.OST=1;
+//    EDIS;
+
+    DELAY_US(500000);
+
+#ifdef F2806x_DEVICE_H
+//    GpioDataRegs.GPBSET.bit.GPIO50 = 1;
+    GpioDataRegs.GPBSET.bit.GPIO51 = 1;
+#endif
+
+    DELAY_US(50000);        //delay to allow DRV830x supplies to ramp up
+
+    DRV8301_cntrl_reg1.bit.GATE_CURRENT = 0;        // full current 1.7A
+//  DRV8301_cntrl_reg1.bit.GATE_CURRENT = 1;        // med current 0.7A
+//  DRV8301_cntrl_reg1.bit.GATE_CURRENT = 2;        // min current 0.25A
+    DRV8301_cntrl_reg1.bit.GATE_RESET = 0;          // Normal Mode
+    DRV8301_cntrl_reg1.bit.PWM_MODE = 0;            // six independant PWMs
+//  DRV8301_cntrl_reg1.bit.OC_MODE = 0;             // current limiting when OC detected
+    DRV8301_cntrl_reg1.bit.OC_MODE = 1;             // latched OC shutdown
+//  DRV8301_cntrl_reg1.bit.OC_MODE = 2;             // Report on OCTWn pin and SPI reg only, no shut-down
+//  DRV8301_cntrl_reg1.bit.OC_MODE = 3;             // OC protection disabled
+//  DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 0;          // OC @ Vds=0.060V
+//  DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 4;          // OC @ Vds=0.097V
+//  DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 6;          // OC @ Vds=0.123V
+//  DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 9;          // OC @ Vds=0.175V
+    DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 15;         // OC @ Vds=0.358V
+//  DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 16;         // OC @ Vds=0.403V
+//  DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 17;         // OC @ Vds=0.454V
+//  DRV8301_cntrl_reg1.bit.OC_ADJ_SET = 18;         // OC @ Vds=0.511V
+    DRV8301_cntrl_reg1.bit.Reserved = 0;
+
+//  DRV8301_cntrl_reg2.bit.OCTW_SET = 0;            // report OT and OC
+    DRV8301_cntrl_reg2.bit.OCTW_SET = 1;            // report OT only
+#if DRV_GAIN == 10
+    DRV8301_cntrl_reg2.bit.GAIN = 0;                // CS amplifier gain = 10
+#elif DRV_GAIN == 20
+    DRV8301_cntrl_reg2.bit.GAIN = 1;                // CS amplifier gain = 20
+#elif DRV_GAIN == 40
+    DRV8301_cntrl_reg2.bit.GAIN = 2;                // CS amplifier gain = 40
+#elif DRV_GAIN == 80
+    DRV8301_cntrl_reg2.bit.GAIN = 3;                // CS amplifier gain = 80
+#endif
+    DRV8301_cntrl_reg2.bit.DC_CAL_CH1 = 0;          // not in CS calibrate mode
+    DRV8301_cntrl_reg2.bit.DC_CAL_CH2 = 0;          // not in CS calibrate mode
+    DRV8301_cntrl_reg2.bit.OC_TOFF = 0;             // normal mode
+    DRV8301_cntrl_reg2.bit.Reserved = 0;
+
+    //write to DRV8301 control register 1, returns status register 1
+    DRV8301_stat_reg1.all = DRV8301_SPI_Write(&SpiaRegs,CNTRL_REG_1_ADDR,DRV8301_cntrl_reg1.all);
+    //write to DRV8301 control register 2, returns status register 1
+    DRV8301_stat_reg1.all = DRV8301_SPI_Write(&SpiaRegs,CNTRL_REG_2_ADDR,DRV8301_cntrl_reg2.all);
 
 }
 
